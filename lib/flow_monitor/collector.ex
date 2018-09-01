@@ -80,7 +80,9 @@ defmodule FlowMonitor.Collector do
       ) do
     {count, counts} = counts |> Map.get_and_update!(scope, &{&1 + amount, &1 + amount})
 
-    write(files[scope], time, count)
+    %{^scope => {_path, file}} = files
+
+    write(file, time, count)
 
     {:noreply, %State{state | counts: counts}}
   end
@@ -98,7 +100,7 @@ defmodule FlowMonitor.Collector do
     |> Enum.to_list()
   end
 
-  defp write({_path, file}, time, amount) do
+  defp write(file, time, amount) do
     time = :os.system_time(@timeres) - time
     IO.write(file, "#{time}\t#{amount}\n")
   end
