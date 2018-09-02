@@ -4,7 +4,7 @@ defmodule FlowMonitor.Collector do
   @timeres :millisecond
 
   defmodule Config do
-    defstruct name: "progress", path: "./", scopes: []
+    defstruct name: "progress", path: ".", scopes: []
   end
 
   defmodule State do
@@ -19,7 +19,7 @@ defmodule FlowMonitor.Collector do
   end
 
   def stop(pid) do
-    GenServer.stop(pid)
+    GenServer.cast(pid, :stop)
   end
 
   #############
@@ -55,7 +55,8 @@ defmodule FlowMonitor.Collector do
       scopes
       |> Enum.map(fn scope ->
         path = "#{path}/#{name}-#{scope}.log"
-        {:ok, file} = :file.open(path, [:raw, :write])
+
+        file = File.open!(path, [:write])
 
         {scope, {path, file}}
       end)
@@ -87,17 +88,16 @@ defmodule FlowMonitor.Collector do
     {:noreply, %State{state | counts: counts}}
   end
 
+  def handle_cast(:stop, state) do
+    {:stop, :normal, state}
+  end
+
   def terminate(_reason, %State{files: files, path: path}) do
     FlowMonitor.Grapher.graph(path, prepare_graph(files))
   end
 
   defp prepare_graph(files) do
-    files
-    |> Stream.each(fn {_, {_, file}} -> :file.close(file) end)
-    |> Stream.map(fn {scope, {path, _}} ->
-      {scope, path}
-    end)
-    |> Enum.to_list()
+    files |> Enum.map(fn {scope, {path, _}} -> {scope, path} end)
   end
 
   defp write(file, time, amount) do

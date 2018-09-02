@@ -1,18 +1,35 @@
 defmodule FlowMonitor do
-  @moduledoc """
-  Documentation for FlowMonitor.
-  """
+  defmacro run(pipeline, opts \\ []) do
+    quote do
+      %Flow{operations: operations} = flow = unquote(pipeline)
 
-  @doc """
-  Hello world.
+      names =
+        1..length(operations)
+        |> Stream.map(&Integer.to_string/1)
+        |> Stream.map(&String.to_atom/1)
+        |> Enum.to_list()
 
-  ## Examples
+      pid = FlowMonitor.Dispatcher.start_collector([{:scopes, names} | unquote(opts)])
 
-      iex> FlowMonitor.hello()
-      :world
+      {:ok, flow_pid} =
+        %Flow{
+          flow
+          | operations:
+              FlowMonitor.Inspector.inject_monitors(
+                pid,
+                operations,
+                names
+              )
+        }
+        |> Flow.start_link()
 
-  """
-  def hello do
-    :world
+      flow_ref = Process.monitor(flow_pid)
+
+      receive do
+        {:DOWN, ^flow_ref, :process, _pid, _msg} ->
+          IO.puts("Normal exit from flow")
+          # FlowMonitor.Collector.stop(pid)
+      end
+    end
   end
 end

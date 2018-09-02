@@ -12,6 +12,10 @@ defmodule FlowMonitor.Dispatcher do
     GenServer.call(__MODULE__, {:start_collector, opts})
   end
 
+  def stop_collector(pid) do
+    GenServer.cast(__MODULE__, {:stop_collector, pid})
+  end
+
   #############
   # Internals #
   #############
@@ -26,5 +30,10 @@ defmodule FlowMonitor.Dispatcher do
   def handle_call({:start_collector, opts}, _from, %State{collectors: collectors} = state) do
     {:ok, pid} = FlowMonitor.CollectorSupervisor.start_collector(opts)
     {:reply, pid, %State{state | collectors: [pid | collectors]}}
+  end
+
+  def handle_cast({:stop_collector, pid}, state) do
+    FlowMonitor.CollectorSupervisor.stop_collector(pid)
+    {:noreply, state}
   end
 end
