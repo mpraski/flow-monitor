@@ -1,7 +1,5 @@
 defmodule FlowMonitor do
-  @default_opts [name: "progress", path: "."]
-
-  defmacro run(pipeline, opts \\ @default_opts) do
+  defmacro run(pipeline, opts \\ []) do
     quote do
       %Flow{operations: operations} = flow = unquote(pipeline)
 

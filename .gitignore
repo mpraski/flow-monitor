@@ -26,4 +26,5 @@ erl_crash.dump
 flow_monitor-*.tar
 
 # Do not include generated files
-/progress-*
+/progress*
+/plot*

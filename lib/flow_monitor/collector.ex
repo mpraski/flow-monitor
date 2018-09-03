@@ -3,17 +3,11 @@ defmodule FlowMonitor.Collector do
 
   @timeres :millisecond
 
-  defmodule Config do
-    defstruct name: "progress",
-              path: ".",
-              scopes: []
-  end
-
   defmodule State do
     defstruct time: 0,
-              path: "",
               files: %{},
-              counts: %{}
+              counts: %{},
+              config: %FlowMonitor.Config{}
   end
 
   ##############
@@ -36,26 +30,54 @@ defmodule FlowMonitor.Collector do
   end
 
   def init(opts) do
-    init(opts, %Config{})
+    init(opts, %FlowMonitor.Config{})
   end
 
-  def init([{:name, name} | opts], config) when is_bitstring(name) do
-    init(opts, %Config{config | name: name})
-  end
-
-  def init([{:path, path} | opts], config) when is_bitstring(path) do
-    init(opts, %Config{config | path: path})
+  def init([{:path, path} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | path: path})
   end
 
   def init([{:scopes, scopes} | opts], config) when is_list(scopes) do
-    init(opts, %Config{config | scopes: scopes})
+    init(opts, %FlowMonitor.Config{config | scopes: scopes})
+  end
+
+  def init([{:name, name} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | graph_name: name})
+  end
+
+  def init([{:title, title} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | graph_title: title})
+  end
+
+  def init([{:size, {_, _} = size} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | graph_size: size})
+  end
+
+  def init([{:range, {_, _} = range} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | graph_range: range})
+  end
+
+  def init([{:font, font} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | font_name: font})
+  end
+
+  def init([{:font_size, font_size} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | font_size: font_size})
+  end
+
+  def init([{:xlabel, xlabel} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | xlabel: xlabel})
+  end
+
+  def init([{:ylabel, ylabel} | opts], config) do
+    init(opts, %FlowMonitor.Config{config | ylabel: ylabel})
   end
 
   def init([_ | rest], config) do
     init(rest, config)
   end
 
-  def init([], %Config{name: name, path: path, scopes: scopes}) do
+  def init([], %FlowMonitor.Config{path: path, scopes: scopes, graph_name: name} = config) do
     files =
       scopes
       |> Stream.map(fn scope ->
@@ -73,7 +95,7 @@ defmodule FlowMonitor.Collector do
 
     counts = scopes |> Stream.map(fn scope -> {scope, 0} end) |> Map.new()
 
-    {:ok, %State{time: time, path: path, files: files, counts: counts}}
+    {:ok, %State{time: time, files: files, counts: counts, config: config}}
   end
 
   def handle_cast(
@@ -97,8 +119,8 @@ defmodule FlowMonitor.Collector do
     {:stop, :normal, state}
   end
 
-  def terminate(_reason, %State{files: files, path: path}) do
-    FlowMonitor.Grapher.graph(path, prepare_data(files))
+  def terminate(_reason, %State{config: config, files: files}) do
+    FlowMonitor.Grapher.graph(config, prepare_data(files))
   end
 
   defp prepare_data(files) do
