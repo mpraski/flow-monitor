@@ -3,10 +3,11 @@ defmodule FlowMonitor.Inspector do
   # replacing operations with their augamented version
 
   @default_types [:map, :each]
+  @mapper_types [:map, :each, :filter]
 
   defmodule NameAcc do
     defstruct depth: 0,
-              max_depth: 3,
+              max_depth: 10,
               lines: []
   end
 
@@ -14,16 +15,28 @@ defmodule FlowMonitor.Inspector do
         {
           :.,
           _,
-          [{[:Flow]}, :map]
+          [{:__aliases__, _, [:Flow]}, type]
         },
         _,
         [mapper]
       }) do
-    build_name(%NameAcc{}, mapper)
+    if type in @mapper_types do
+      build_name(%NameAcc{}, mapper)
+    else
+      []
+    end
   end
 
   def extract_names({_op, _meta, args}) do
-    args |> Enum.each(&extract_names/1)
+    args |> Enum.map(&extract_names/1)
+  end
+
+  def extract_names(list) when is_list(list) do
+    list |> Enum.map(&extract_names/1)
+  end
+
+  def extract_names(_) do
+    []
   end
 
   defp build_name(
@@ -34,7 +47,7 @@ defmodule FlowMonitor.Inspector do
          _args
        )
        when depth > max_depth do
-    acc
+    acc |> add("(...)")
   end
 
   defp build_name(acc, args) when not is_list(args) do
@@ -52,29 +65,35 @@ defmodule FlowMonitor.Inspector do
 
   defp build_name_segment({:&, _, [func]}, acc) do
     acc
-    |> add("&")
     |> build_name(func)
+    |> add("&")
   end
 
   defp build_name_segment({:/, _, [func, arity]}, acc) do
     acc
+    |> add([arity, "/"])
     |> build_name(func)
-    |> add_at_end(["/", arity])
   end
 
   defp build_name_segment({:., _, [namespace, id]}, acc) do
     acc
-    |> build_name(namespace)
-    |> add(".")
     |> build_name(id)
+    |> add(".")
+    |> build_name(namespace)
   end
 
   defp build_name_segment({:__aliases__, _, [sym]}, acc) do
     acc |> add(sym)
   end
 
-  defp build_name_segment(sym, acc) do
+  defp build_name_segment(sym, acc) when is_atom(sym) do
     acc |> add(sym)
+  end
+
+  defp build_name_segment({op, _, args}, acc) do
+    acc
+    |> build_name(op)
+    |> build_name(args)
   end
 
   defp add(acc, elem) when not is_list(elem) do
@@ -87,10 +106,6 @@ defmodule FlowMonitor.Inspector do
 
   defp add(%NameAcc{lines: lines} = acc, [elem | rest]) do
     add(%NameAcc{acc | lines: [elem | lines]}, rest)
-  end
-
-  defp add_at_end(%NameAcc{lines: lines} = acc, elems) when is_list(elems) do
-    %NameAcc{acc | lines: lines ++ elems}
   end
 
   def inject_monitors(pid, operations, names, types \\ @default_types) do
