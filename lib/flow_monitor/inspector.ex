@@ -9,6 +9,10 @@ defmodule FlowMonitor.Inspector do
     defstruct depth: 0,
               max_depth: 10,
               lines: []
+
+    def new do
+      %NameAcc{}
+    end
   end
 
   def extract_names({
@@ -26,20 +30,26 @@ defmodule FlowMonitor.Inspector do
         |> Atom.to_string()
         |> String.capitalize()
 
-      %NameAcc{}
+      NameAcc.new()
       |> build_name(mapper)
       |> add("#{formatted_type}: ")
+      |> to_text()
+      |> to_list()
     else
       []
     end
   end
 
-  def extract_names({_op, _meta, args}) do
-    args |> Enum.map(&extract_names/1)
+  def extract_names({_op, _meta, args} = whole) do
+    IO.inspect(whole)
+    extract_names(args)
   end
 
   def extract_names(list) when is_list(list) do
-    list |> Enum.map(&extract_names/1)
+    list
+    |> Stream.map(&extract_names/1)
+    |> Stream.flat_map(& &1)
+    |> Enum.to_list()
   end
 
   def extract_names(_) do
@@ -129,6 +139,10 @@ defmodule FlowMonitor.Inspector do
 
   defp add(%NameAcc{lines: lines} = acc, [elem | rest]) do
     %NameAcc{acc | lines: [elem | lines]} |> add(rest)
+  end
+
+  defp to_text(%NameAcc{lines: lines}) do
+    lines |> Enum.join()
   end
 
   defp to_list(items) when not is_list(items) do

@@ -1,13 +1,13 @@
 defmodule FlowMonitor do
   defmacro run(pipeline, opts \\ []) do
-    quote do
-      %Flow{operations: operations} = flow = unquote(pipeline)
+    extracted_names =
+      FlowMonitor.Inspector.extract_names(pipeline)
+      |> Enum.map(&String.to_atom/1)
 
-      names =
-        1..length(operations)
-        |> Stream.map(&Integer.to_string/1)
-        |> Stream.map(&String.to_atom/1)
-        |> Enum.to_list()
+    quote do
+      names = unquote(extracted_names)
+
+      %Flow{operations: operations} = flow = unquote(pipeline)
 
       {:ok, pid} = FlowMonitor.Collector.start_link(unquote(opts) |> Keyword.put(:scopes, names))
 
