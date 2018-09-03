@@ -2,6 +2,7 @@ defmodule FlowMonitor.Collector do
   use GenServer
 
   @timeres :millisecond
+  @time_margin 2
 
   defmodule State do
     defstruct time: 0,
@@ -121,8 +122,14 @@ defmodule FlowMonitor.Collector do
     {:stop, :normal, state}
   end
 
-  def terminate(:normal, %State{config: config, files: files}) do
-    FlowMonitor.Grapher.graph(config, prepare_files(files))
+  def terminate(:normal, %State{config: config, files: files, time: time}) do
+    FlowMonitor.Grapher.graph(
+      %FlowMonitor.Config{
+        config
+        | time_end: :os.system_time(@timeres) - time + @time_margin
+      },
+      prepare_files(files)
+    )
   end
 
   defp prepare_files(files) do

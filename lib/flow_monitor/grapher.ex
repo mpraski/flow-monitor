@@ -35,7 +35,8 @@ defmodule FlowMonitor.Grapher do
            graph_size: {width, height},
            graph_range: {rstart, rend},
            xlabel: xlabel,
-           ylabel: ylabel
+           ylabel: ylabel,
+           time_end: time_end
          },
          files
        ) do
@@ -48,7 +49,13 @@ defmodule FlowMonitor.Grapher do
     set ylabel "#{ylabel}"
     set key top left
 
-    set xrange [#{rstart}:#{rend}]
+    set xrange [#{rstart}:#{
+      if rend do
+        rend
+      else
+        time_end
+      end
+    }]
 
     plot #{
       files
