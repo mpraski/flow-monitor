@@ -26,33 +26,71 @@ defmodule FlowMonitor.Inspector do
     args |> Enum.each(&extract_names/1)
   end
 
-  def build_name(
-        %NameAcc{
-          depth: depth,
-          max_depth: max_depth
-        } = acc,
-        _args
-      )
-      when depth > max_depth do
+  defp build_name(
+         %NameAcc{
+           depth: depth,
+           max_depth: max_depth
+         } = acc,
+         _args
+       )
+       when depth > max_depth do
     acc
   end
 
-  def build_name(
-        %NameAcc{
-          depth: depth
-        } = acc,
-        args
-      ) do
+  defp build_name(acc, args) when not is_list(args) do
+    build_name(acc, [args])
+  end
+
+  defp build_name(
+         %NameAcc{
+           depth: depth
+         } = acc,
+         args
+       ) do
     args |> Enum.reduce(%NameAcc{acc | depth: depth + 1}, &build_name_segment/2)
   end
 
-  def build_name_segment({:&, _, [func]}, %NameAcc{lines: lines} = acc) do
-    build_name(%NameAcc{acc | lines: ["&" | lines]}, [func])
+  defp build_name_segment({:&, _, [func]}, acc) do
+    acc
+    |> add("&")
+    |> build_name(func)
   end
 
-  def build_name_segment({:/, _, [func, arity]}, %NameAcc{lines: lines} = acc) do
-    %NameAcc{lines: newlines} = newacc = build_name(%NameAcc{acc | lines: ["/" | lines]}, [func])
-    %NameAcc{newacc | lines: newlines ++ ["/", arity]}
+  defp build_name_segment({:/, _, [func, arity]}, acc) do
+    acc
+    |> build_name(func)
+    |> add_at_end(["/", arity])
+  end
+
+  defp build_name_segment({:., _, [namespace, id]}, acc) do
+    acc
+    |> build_name(namespace)
+    |> add(".")
+    |> build_name(id)
+  end
+
+  defp build_name_segment({:__aliases__, _, [sym]}, acc) do
+    acc |> add(sym)
+  end
+
+  defp build_name_segment(sym, acc) do
+    acc |> add(sym)
+  end
+
+  defp add(acc, elem) when not is_list(elem) do
+    add(acc, [elem])
+  end
+
+  defp add(acc, []) do
+    acc
+  end
+
+  defp add(%NameAcc{lines: lines} = acc, [elem | rest]) do
+    add(%NameAcc{acc | lines: [elem | lines]}, rest)
+  end
+
+  defp add_at_end(%NameAcc{lines: lines} = acc, elems) when is_list(elems) do
+    %NameAcc{acc | lines: lines ++ elems}
   end
 
   def inject_monitors(pid, operations, names, types \\ @default_types) do

@@ -120,10 +120,10 @@ defmodule FlowMonitor.Collector do
   end
 
   def terminate(:normal, %State{config: config, files: files}) do
-    FlowMonitor.Grapher.graph(config, prepare_data(files))
+    FlowMonitor.Grapher.graph(config, prepare_files(files))
   end
 
-  defp prepare_data(files) do
+  defp prepare_files(files) do
     files
     |> Stream.each(fn {_, {_, file}} -> :file.close(file) end)
     |> Stream.map(fn {scope, {path, _}} -> {scope, path} end)
