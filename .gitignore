@@ -25,3 +25,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 flow_monitor-*.tar
 
+# Do not include generated files
+/progress-*

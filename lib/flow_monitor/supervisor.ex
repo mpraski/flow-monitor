@@ -1,4 +1,4 @@
-defmodule FlowMonitor.RootSupervisor do
+defmodule FlowMonitor.Supervisor do
   use Supervisor
 
   #############
@@ -11,8 +11,6 @@ defmodule FlowMonitor.RootSupervisor do
 
   def init(_) do
     children = [
-      {FlowMonitor.CollectorSupervisor, []},
-      {FlowMonitor.Dispatcher, []},
       {FlowMonitor.Grapher, []}
     ]
 

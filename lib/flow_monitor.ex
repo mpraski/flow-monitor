@@ -1,5 +1,7 @@
 defmodule FlowMonitor do
-  defmacro run(pipeline, opts \\ []) do
+  @default_opts [name: "progress", path: "."]
+
+  defmacro run(pipeline, opts \\ @default_opts) do
     quote do
       %Flow{operations: operations} = flow = unquote(pipeline)
 
@@ -9,7 +11,7 @@ defmodule FlowMonitor do
         |> Stream.map(&String.to_atom/1)
         |> Enum.to_list()
 
-      pid = FlowMonitor.Dispatcher.start_collector([{:scopes, names} | unquote(opts)])
+      {:ok, pid} = FlowMonitor.Collector.start_link(unquote(opts) |> Keyword.put(:scopes, names))
 
       {:ok, flow_pid} =
         %Flow{
@@ -26,9 +28,8 @@ defmodule FlowMonitor do
       flow_ref = Process.monitor(flow_pid)
 
       receive do
-        {:DOWN, ^flow_ref, :process, _pid, _msg} ->
-          IO.puts("Normal exit from flow")
-          # FlowMonitor.Collector.stop(pid)
+        {:DOWN, ^flow_ref, :process, ^flow_pid, :normal} ->
+          FlowMonitor.Collector.stop(pid)
       end
     end
   end

@@ -4,11 +4,16 @@ defmodule FlowMonitor.Collector do
   @timeres :millisecond
 
   defmodule Config do
-    defstruct name: "progress", path: ".", scopes: []
+    defstruct name: "progress",
+              path: ".",
+              scopes: []
   end
 
   defmodule State do
-    defstruct time: 0, path: "", files: %{}, counts: %{}
+    defstruct time: 0,
+              path: "",
+              files: %{},
+              counts: %{}
   end
 
   ##############
@@ -53,10 +58,10 @@ defmodule FlowMonitor.Collector do
   def init([], %Config{name: name, path: path, scopes: scopes}) do
     files =
       scopes
-      |> Enum.map(fn scope ->
+      |> Stream.map(fn scope ->
         path = "#{path}/#{name}-#{scope}.log"
 
-        file = File.open!(path, [:write])
+        {:ok, file} = :file.open(path, [:write, :raw])
 
         {scope, {path, file}}
       end)
@@ -66,7 +71,7 @@ defmodule FlowMonitor.Collector do
 
     files |> Enum.each(fn {_, {_, file}} -> write(file, time, 0) end)
 
-    counts = scopes |> Enum.map(fn scope -> {scope, 0} end) |> Map.new()
+    counts = scopes |> Stream.map(fn scope -> {scope, 0} end) |> Map.new()
 
     {:ok, %State{time: time, path: path, files: files, counts: counts}}
   end
@@ -93,15 +98,18 @@ defmodule FlowMonitor.Collector do
   end
 
   def terminate(_reason, %State{files: files, path: path}) do
-    FlowMonitor.Grapher.graph(path, prepare_graph(files))
+    FlowMonitor.Grapher.graph(path, prepare_data(files))
   end
 
-  defp prepare_graph(files) do
-    files |> Enum.map(fn {scope, {path, _}} -> {scope, path} end)
+  defp prepare_data(files) do
+    files
+    |> Stream.each(fn {_, {_, file}} -> :file.close(file) end)
+    |> Stream.map(fn {scope, {path, _}} -> {scope, path} end)
+    |> Enum.to_list()
   end
 
   defp write(file, time, amount) do
     time = :os.system_time(@timeres) - time
-    IO.write(file, "#{time}\t#{amount}\n")
+    :file.write(file, "#{time}\t#{amount}\n")
   end
 end
