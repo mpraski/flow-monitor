@@ -97,7 +97,7 @@ defmodule FlowMonitor.Inspector do
   end
 
   defp add(acc, elem) when not is_list(elem) do
-    add(acc, [elem])
+    acc |> add([elem])
   end
 
   defp add(acc, []) do
@@ -105,7 +105,7 @@ defmodule FlowMonitor.Inspector do
   end
 
   defp add(%NameAcc{lines: lines} = acc, [elem | rest]) do
-    add(%NameAcc{acc | lines: [elem | lines]}, rest)
+    %NameAcc{acc | lines: [elem | lines]} |> add(rest)
   end
 
   def inject_monitors(pid, operations, names, types \\ @default_types) do
