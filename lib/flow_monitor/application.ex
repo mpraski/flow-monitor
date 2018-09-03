@@ -8,12 +8,12 @@ defmodule FlowMonitor.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
-      {FlowMonitor.Supervisor, []}
+      {FlowMonitor.Grapher, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one]
+    opts = [strategy: :one_for_one, name: FlowMonitor.Supervisor]
     Supervisor.start_link(children, opts)
   end
 end

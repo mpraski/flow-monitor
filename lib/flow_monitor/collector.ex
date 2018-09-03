@@ -81,7 +81,7 @@ defmodule FlowMonitor.Collector do
     files =
       scopes
       |> Stream.map(fn scope ->
-        path = "#{path}/#{name}-#{scope}.log"
+        path = Path.join(path, "#{name}-#{scope}.log")
 
         {:ok, file} = :file.open(path, [:write, :raw])
 
@@ -119,7 +119,7 @@ defmodule FlowMonitor.Collector do
     {:stop, :normal, state}
   end
 
-  def terminate(_reason, %State{config: config, files: files}) do
+  def terminate(:normal, %State{config: config, files: files}) do
     FlowMonitor.Grapher.graph(config, prepare_data(files))
   end
 
