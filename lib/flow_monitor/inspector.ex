@@ -21,7 +21,14 @@ defmodule FlowMonitor.Inspector do
         [mapper]
       }) do
     if type in @mapper_types do
-      build_name(%NameAcc{}, mapper)
+      formatted_type =
+        type
+        |> Atom.to_string()
+        |> String.capitalize()
+
+      %NameAcc{}
+      |> build_name(mapper)
+      |> add("#{formatted_type}: ")
     else
       []
     end
@@ -50,17 +57,15 @@ defmodule FlowMonitor.Inspector do
     acc |> add("(...)")
   end
 
-  defp build_name(acc, args) when not is_list(args) do
-    build_name(acc, [args])
-  end
-
   defp build_name(
          %NameAcc{
            depth: depth
          } = acc,
          args
        ) do
-    args |> Enum.reduce(%NameAcc{acc | depth: depth + 1}, &build_name_segment/2)
+    args
+    |> to_list()
+    |> Enum.reduce(%NameAcc{acc | depth: depth + 1}, &build_name_segment/2)
   end
 
   defp build_name_segment({:&, _, [func]}, acc) do
@@ -86,6 +91,24 @@ defmodule FlowMonitor.Inspector do
     acc |> add(sym)
   end
 
+  defp build_name_segment({:fn, _, [arrow]}, acc) do
+    acc
+    |> build_name(arrow)
+    |> add("fn ")
+  end
+
+  defp build_name_segment({:->, _, [args, _]}, acc) do
+    formatted_args =
+      args
+      |> Stream.map(fn {arg, _, _} -> arg end)
+      |> Stream.intersperse(", ")
+      |> Enum.reverse()
+
+    acc
+    |> add(" -> ...")
+    |> add(formatted_args)
+  end
+
   defp build_name_segment(sym, acc) when is_atom(sym) do
     acc |> add(sym)
   end
@@ -106,6 +129,14 @@ defmodule FlowMonitor.Inspector do
 
   defp add(%NameAcc{lines: lines} = acc, [elem | rest]) do
     %NameAcc{acc | lines: [elem | lines]} |> add(rest)
+  end
+
+  defp to_list(items) when not is_list(items) do
+    [items]
+  end
+
+  defp to_list(items) do
+    items
   end
 
   def inject_monitors(pid, operations, names, types \\ @default_types) do
