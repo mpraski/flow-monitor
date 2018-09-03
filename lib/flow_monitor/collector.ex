@@ -81,7 +81,9 @@ defmodule FlowMonitor.Collector do
     files =
       scopes
       |> Stream.map(fn scope ->
-        path = Path.join(path, "#{name}-#{scope}.log")
+        scope_safe = scope |> safe_filename()
+
+        path = Path.join(path, "#{name}-#{scope_safe}.log")
 
         {:ok, file} = :file.open(path, [:write, :raw])
 
@@ -126,12 +128,30 @@ defmodule FlowMonitor.Collector do
   defp prepare_files(files) do
     files
     |> Stream.each(fn {_, {_, file}} -> :file.close(file) end)
-    |> Stream.map(fn {scope, {path, _}} -> {scope, path} end)
+    |> Stream.map(fn {scope, {path, _}} ->
+      {
+        scope |> safe_title(),
+        path
+      }
+    end)
     |> Enum.to_list()
   end
 
   defp write(file, time, amount) do
     time = :os.system_time(@timeres) - time
     :file.write(file, "#{time}\t#{amount}\n")
+  end
+
+  defp safe_filename(scope) do
+    scope
+    |> Atom.to_string()
+    |> String.replace(~r/(#|-|>|,|\.|&|\/|:|\s)/, "")
+    |> String.downcase()
+  end
+
+  defp safe_title(scope) do
+    scope
+    |> Atom.to_string()
+    |> String.replace(~r/&/, "")
   end
 end

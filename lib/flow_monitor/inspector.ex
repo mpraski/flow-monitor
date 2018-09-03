@@ -40,8 +40,7 @@ defmodule FlowMonitor.Inspector do
     end
   end
 
-  def extract_names({_op, _meta, args} = whole) do
-    IO.inspect(whole)
+  def extract_names({_op, _meta, args}) do
     extract_names(args)
   end
 
