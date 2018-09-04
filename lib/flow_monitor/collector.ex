@@ -137,7 +137,7 @@ defmodule FlowMonitor.Collector do
     |> Stream.each(fn {_, {_, file}} -> :file.close(file) end)
     |> Stream.map(fn {scope, {path, _}} ->
       {
-        scope |> safe_title(),
+        safe_title(scope),
         path
       }
     end)
@@ -159,6 +159,6 @@ defmodule FlowMonitor.Collector do
   defp safe_title(scope) do
     scope
     |> Atom.to_string()
-    |> String.replace(~r/&/, "")
+    |> String.replace("&", ~s(\\\\\&))
   end
 end

@@ -19,18 +19,18 @@ defmodule FlowMonitor.Inspector do
     pipeline |> extract_names([]) |> Enum.reverse()
   end
 
-  def extract_names(
-        {
-          {
-            :.,
-            _,
-            [{:__aliases__, _, [:Flow]}, type]
-          },
-          _,
-          [mapper]
-        },
-        acc
-      ) do
+  defp extract_names(
+         {
+           {
+             :.,
+             _,
+             [{:__aliases__, _, [:Flow]}, type]
+           },
+           _,
+           [mapper]
+         },
+         acc
+       ) do
     if type in @mapper_types do
       formatted_type =
         type
@@ -39,8 +39,9 @@ defmodule FlowMonitor.Inspector do
 
       [
         NameAcc.new()
+        |> add(")")
         |> build_name(mapper)
-        |> add("#{formatted_type}: ")
+        |> add("#{formatted_type} (")
         |> to_text()
         | acc
       ]
@@ -49,15 +50,15 @@ defmodule FlowMonitor.Inspector do
     end
   end
 
-  def extract_names({_op, _meta, args}, acc) do
+  defp extract_names({_op, _meta, args}, acc) do
     args |> extract_names(acc)
   end
 
-  def extract_names(args, acc) when is_list(args) do
+  defp extract_names(args, acc) when is_list(args) do
     args |> Enum.reduce(acc, &extract_names/2)
   end
 
-  def extract_names(_, acc) do
+  defp extract_names(_, acc) do
     acc
   end
 
@@ -120,7 +121,7 @@ defmodule FlowMonitor.Inspector do
       |> Enum.reverse()
 
     acc
-    |> add(" -> ...")
+    |> add(" -> ... end")
     |> add(formatted_args)
   end
 
