@@ -15,44 +15,50 @@ defmodule FlowMonitor.Inspector do
     end
   end
 
-  def extract_names({
+  def extract_names(pipeline) do
+    pipeline |> extract_names([]) |> Enum.reverse()
+  end
+
+  def extract_names(
         {
-          :.,
+          {
+            :.,
+            _,
+            [{:__aliases__, _, [:Flow]}, type]
+          },
           _,
-          [{:__aliases__, _, [:Flow]}, type]
+          [mapper]
         },
-        _,
-        [mapper]
-      }) do
+        acc
+      ) do
     if type in @mapper_types do
       formatted_type =
         type
         |> Atom.to_string()
         |> String.capitalize()
 
-      NameAcc.new()
-      |> build_name(mapper)
-      |> add("#{formatted_type}: ")
-      |> to_text()
-      |> to_list()
+      [
+        NameAcc.new()
+        |> build_name(mapper)
+        |> add("#{formatted_type}: ")
+        |> to_text()
+        | acc
+      ]
     else
-      []
+      acc
     end
   end
 
-  def extract_names({_op, _meta, args}) do
-    extract_names(args)
+  def extract_names({_op, _meta, args}, acc) do
+    args |> extract_names(acc)
   end
 
-  def extract_names(list) when is_list(list) do
-    list
-    |> Stream.map(&extract_names/1)
-    |> Stream.flat_map(& &1)
-    |> Enum.to_list()
+  def extract_names(args, acc) when is_list(args) do
+    args |> Enum.reduce(acc, &extract_names/2)
   end
 
-  def extract_names(_) do
-    []
+  def extract_names(_, acc) do
+    acc
   end
 
   defp build_name(
