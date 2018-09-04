@@ -6,7 +6,7 @@ defmodule FlowMonitor.Config do
             graph_name: "progress",
             graph_title: "Elixir Flow processing progress over time",
             graph_size: {700, 500},
-            graph_range: {0, nil},
+            graph_range: {nil, nil},
             xlabel: "Time (ms)",
             ylabel: "Items processed",
             time_end: nil

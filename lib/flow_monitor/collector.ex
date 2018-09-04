@@ -90,7 +90,7 @@ defmodule FlowMonitor.Collector do
 
         {scope, {path, file}}
       end)
-      |> Map.new()
+      |> Keyword.new()
 
     time = :os.system_time(@timeres)
 
@@ -111,7 +111,7 @@ defmodule FlowMonitor.Collector do
       ) do
     {count, counts} = counts |> Map.get_and_update!(scope, &{&1 + amount, &1 + amount})
 
-    %{^scope => {_path, file}} = files
+    {_path, file} = files |> Keyword.get(scope)
 
     write(file, time, count)
 

@@ -49,7 +49,13 @@ defmodule FlowMonitor.Grapher do
     set ylabel "#{ylabel}"
     set key top left
 
-    set xrange [#{rstart}:#{
+    set xrange [#{
+      if rstart do
+        rstart
+      else
+        0
+      end
+    }:#{
       if rend do
         rend
       else
