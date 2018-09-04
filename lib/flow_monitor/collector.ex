@@ -81,7 +81,7 @@ defmodule FlowMonitor.Collector do
   def init([], %FlowMonitor.Config{path: path, scopes: scopes, graph_name: name} = config) do
     files =
       scopes
-      |> Stream.map(fn scope ->
+      |> Enum.map(fn scope ->
         scope_safe = scope |> safe_filename()
 
         path = Path.join(path, "#{name}-#{scope_safe}.log")
@@ -90,7 +90,6 @@ defmodule FlowMonitor.Collector do
 
         {scope, {path, file}}
       end)
-      |> Keyword.new()
 
     time = :os.system_time(@timeres)
 
