@@ -86,13 +86,13 @@ defmodule FlowMonitor.Inspector do
     |> Enum.reduce(%NameAcc{acc | depth: depth + 1}, &build_name_segment/2)
   end
 
-  defp build_name_segment({:&, _, [func]}, acc) do
+  defp build_name_segment({:&, _, [arg]}, acc) do
     acc
-    |> build_name(func)
+    |> build_name(arg)
     |> add("&")
   end
 
-  defp build_name_segment({:/, _, [func, arity]}, acc) do
+  defp build_name_segment({:/, _, [{func, _, Elixir}, arity]}, acc) do
     acc
     |> add([arity, "/"])
     |> build_name(func)
@@ -103,10 +103,6 @@ defmodule FlowMonitor.Inspector do
     |> build_name(id)
     |> add(".")
     |> build_name(namespace)
-  end
-
-  defp build_name_segment({:__aliases__, _, [sym]}, acc) do
-    acc |> add(sym)
   end
 
   defp build_name_segment({:fn, _, [arrow]}, acc) do
@@ -127,14 +123,20 @@ defmodule FlowMonitor.Inspector do
     |> add(formatted_args)
   end
 
-  defp build_name_segment(sym, acc) when is_atom(sym) do
+  defp build_name_segment({:__aliases__, _, [sym]}, acc) do
     acc |> add(sym)
   end
 
   defp build_name_segment({op, _, args}, acc) do
     acc
-    |> build_name(op)
+    |> add(")")
     |> build_name(args)
+    |> add("(")
+    |> build_name(op)
+  end
+
+  defp build_name_segment(sym, acc) do
+    acc |> add(sym)
   end
 
   defp add(acc, elem) when not is_list(elem) do
