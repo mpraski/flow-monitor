@@ -1,6 +1,8 @@
 defmodule FlowMonitor.Grapher do
   use GenServer
 
+  alias FlowMonitor.Config
+
   @plot_file "plot.gp"
 
   def start_link(opts \\ []) do
@@ -11,7 +13,7 @@ defmodule FlowMonitor.Grapher do
     {:ok, []}
   end
 
-  def graph(%FlowMonitor.Config{} = config, files) when is_list(files) do
+  def graph(%Config{} = config, files) when is_list(files) do
     GenServer.cast(__MODULE__, {:graph, config, files})
   end
 
@@ -26,7 +28,7 @@ defmodule FlowMonitor.Grapher do
   end
 
   defp build_graph(
-         %FlowMonitor.Config{
+         %Config{
            path: path,
            font_name: font_name,
            font_size: font_size,

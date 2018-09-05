@@ -1,6 +1,8 @@
 defmodule FlowMonitor.Collector do
   use GenServer
 
+  alias FlowMonitor.{Grapher, Config}
+
   @timeres :millisecond
   @time_margin 2
 
@@ -31,54 +33,54 @@ defmodule FlowMonitor.Collector do
   end
 
   def init(opts) do
-    init(opts, %FlowMonitor.Config{})
+    init(opts, %Config{})
   end
 
   def init([{:path, path} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | path: path})
+    init(opts, %Config{config | path: path})
   end
 
   def init([{:scopes, scopes} | opts], config) when is_list(scopes) do
-    init(opts, %FlowMonitor.Config{config | scopes: scopes})
+    init(opts, %Config{config | scopes: scopes})
   end
 
   def init([{:name, name} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | graph_name: name})
+    init(opts, %Config{config | graph_name: name})
   end
 
   def init([{:title, title} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | graph_title: title})
+    init(opts, %Config{config | graph_title: title})
   end
 
   def init([{:size, {_, _} = size} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | graph_size: size})
+    init(opts, %Config{config | graph_size: size})
   end
 
   def init([{:range, {_, _} = range} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | graph_range: range})
+    init(opts, %Config{config | graph_range: range})
   end
 
   def init([{:font, font} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | font_name: font})
+    init(opts, %Config{config | font_name: font})
   end
 
   def init([{:font_size, font_size} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | font_size: font_size})
+    init(opts, %Config{config | font_size: font_size})
   end
 
   def init([{:xlabel, xlabel} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | xlabel: xlabel})
+    init(opts, %Config{config | xlabel: xlabel})
   end
 
   def init([{:ylabel, ylabel} | opts], config) do
-    init(opts, %FlowMonitor.Config{config | ylabel: ylabel})
+    init(opts, %Config{config | ylabel: ylabel})
   end
 
   def init([_ | rest], config) do
     init(rest, config)
   end
 
-  def init([], %FlowMonitor.Config{path: path, scopes: scopes, graph_name: name} = config) do
+  def init([], %Config{path: path, scopes: scopes, graph_name: name} = config) do
     files =
       scopes
       |> Enum.map(fn scope ->
@@ -122,8 +124,8 @@ defmodule FlowMonitor.Collector do
   end
 
   def terminate(:normal, %State{config: config, files: files, time: time}) do
-    FlowMonitor.Grapher.graph(
-      %FlowMonitor.Config{
+    Grapher.graph(
+      %Config{
         config
         | time_end: :os.system_time(@timeres) - time + @time_margin
       },

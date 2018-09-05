@@ -2,6 +2,8 @@ defmodule FlowMonitor.Inspector do
   # Collect stages' names via AST inspection, then simply start collector by
   # replacing operations with their augamented version
 
+  alias FlowMonitor.Collector
+
   @default_types [:map, :each]
   @mapper_types [:map, :each, :filter]
 
@@ -159,6 +161,23 @@ defmodule FlowMonitor.Inspector do
     items
   end
 
+  def extract_producer_names(%Flow{producers: producers}) do
+    case producers do
+      {:enumerables, enumerables} ->
+        enumerables
+        |> Stream.with_index(1)
+        |> Stream.map(fn {_, index} -> enumerable_name(index) end)
+        |> Enum.to_list()
+
+      _ ->
+        []
+    end
+  end
+
+  defp enumerable_name(index) do
+    :"Enumerable #{index}"
+  end
+
   def inject_monitors(pid, operations, names, types \\ @default_types) do
     [
       operations,
@@ -171,13 +190,25 @@ defmodule FlowMonitor.Inspector do
          [
            fn item ->
              result = func.(item)
-             FlowMonitor.Collector.incr(pid, name)
+             Collector.incr(pid, name)
              result
            end
          ]}
       else
         mapper
       end
+    end)
+    |> Enum.to_list()
+  end
+
+  def inject_enumerable_monitors(pid, enumerables) do
+    enumerables
+    |> Stream.with_index(1)
+    |> Stream.map(fn {enum, index} ->
+      enum
+      |> Stream.each(fn _ ->
+        Collector.incr(pid, enumerable_name(index))
+      end)
     end)
     |> Enum.to_list()
   end

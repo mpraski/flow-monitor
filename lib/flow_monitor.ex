@@ -1,34 +1,64 @@
 defmodule FlowMonitor do
+  alias FlowMonitor.{Collector, Inspector}
+
   defmacro run(pipeline, opts \\ []) do
-    extracted_names =
-      FlowMonitor.Inspector.extract_names(pipeline)
+    names =
+      pipeline
+      |> Inspector.extract_names()
       |> Enum.map(&String.to_atom/1)
 
     quote do
-      names = unquote(extracted_names)
-
-      %Flow{operations: operations} = flow = unquote(pipeline)
-
-      {:ok, pid} = FlowMonitor.Collector.start_link(unquote(opts) |> Keyword.put(:scopes, names))
-
-      {:ok, flow_pid} =
-        %Flow{
-          flow
-          | operations:
-              FlowMonitor.Inspector.inject_monitors(
-                pid,
-                operations,
-                names
-              )
-        }
-        |> Flow.start_link()
-
-      flow_ref = Process.monitor(flow_pid)
+      {flow_pid, flow_ref, collector_pid} =
+        FlowMonitor.start_flow(unquote(pipeline), unquote(names), unquote(opts))
 
       receive do
         {:DOWN, ^flow_ref, :process, ^flow_pid, :normal} ->
-          FlowMonitor.Collector.stop(pid)
+          Collector.stop(collector_pid)
       end
+    end
+  end
+
+  def start_flow(%Flow{} = flow, names, opts) do
+    enumerable_names = Inspector.extract_producer_names(flow)
+
+    scopes = enumerable_names ++ names
+
+    {:ok, collector_pid} = Collector.start_link(opts |> Keyword.put(:scopes, scopes))
+
+    {:ok, flow_pid} = flow |> FlowMonitor.augament_flow(collector_pid, names) |> Flow.start_link()
+
+    flow_ref = Process.monitor(flow_pid)
+
+    {flow_pid, flow_ref, collector_pid}
+  end
+
+  def augament_flow(
+        %Flow{
+          operations: operations,
+          producers: producers
+        } = flow,
+        pid,
+        names
+      ) do
+    flow = %Flow{
+      flow
+      | operations:
+          Inspector.inject_monitors(
+            pid,
+            operations,
+            names
+          )
+    }
+
+    case producers do
+      {:enumerables, enumerables} ->
+        %Flow{
+          flow
+          | producers: {:enumerables, Inspector.inject_enumerable_monitors(pid, enumerables)}
+        }
+
+      _ ->
+        flow
     end
   end
 end
