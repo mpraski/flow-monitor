@@ -10,7 +10,7 @@ defmodule FlowMonitor.Collector do
     defstruct time: 0,
               files: %{},
               counts: %{},
-              config: %FlowMonitor.Config{}
+              config: %Config{}
   end
 
   ##############
@@ -81,12 +81,16 @@ defmodule FlowMonitor.Collector do
   end
 
   def init([], %Config{path: path, scopes: scopes, graph_name: name} = config) do
+    dir = Path.join(path, "#{name}-#{safe_time()}")
+
+    :file.make_dir(dir)
+
     files =
       scopes
       |> Enum.map(fn scope ->
         scope_safe = scope |> safe_filename()
 
-        path = Path.join(path, "#{name}-#{scope_safe}.log")
+        path = Path.join(dir, "#{name}-#{scope_safe}.log")
 
         {:ok, file} = :file.open(path, [:write, :raw])
 
@@ -99,7 +103,7 @@ defmodule FlowMonitor.Collector do
 
     counts = scopes |> Stream.map(fn scope -> {scope, 0} end) |> Map.new()
 
-    {:ok, %State{time: time, files: files, counts: counts, config: config}}
+    {:ok, %State{time: time, files: files, counts: counts, config: %Config{config | path: dir}}}
   end
 
   def handle_cast(
@@ -161,5 +165,9 @@ defmodule FlowMonitor.Collector do
     scope
     |> Atom.to_string()
     |> String.replace("&", ~s(\\\\\&))
+  end
+
+  defp safe_time() do
+    DateTime.utc_now() |> DateTime.to_unix()
   end
 end

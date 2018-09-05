@@ -18,10 +18,12 @@ defmodule FlowMonitor.Grapher do
   end
 
   def handle_cast({:graph, config, files}, state) do
-    File.write(Path.join([config.path, @plot_file]), build_graph(config, files))
+    graph = Path.join([config.path, @plot_file])
+
+    File.write(graph, build_graph(config, files))
 
     if System.find_executable("gnuplot") do
-      System.cmd("gnuplot", [@plot_file])
+      System.cmd("gnuplot", [graph])
     end
 
     {:noreply, state}
@@ -44,7 +46,7 @@ defmodule FlowMonitor.Grapher do
        ) do
     """
     set terminal png font "#{font_name},#{font_size}" size #{width},#{height}
-    set output "#{path}/#{graph_name}.png"
+    set output "#{Path.join(path, graph_name)}.png"
 
     set title "#{graph_title}"
     set xlabel "#{xlabel}"

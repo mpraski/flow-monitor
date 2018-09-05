@@ -19,20 +19,23 @@ defmodule FlowMonitor do
   end
 
   def start_flow(%Flow{} = flow, names, opts) do
-    enumerable_names = Inspector.extract_producer_names(flow)
+    enumerable_names = flow |> Inspector.extract_producer_names()
 
     scopes = enumerable_names ++ names
 
     {:ok, collector_pid} = Collector.start_link(opts |> Keyword.put(:scopes, scopes))
 
-    {:ok, flow_pid} = flow |> FlowMonitor.augament_flow(collector_pid, names) |> Flow.start_link()
+    {:ok, flow_pid} =
+      flow
+      |> FlowMonitor.inject(collector_pid, names)
+      |> Flow.start_link()
 
     flow_ref = Process.monitor(flow_pid)
 
     {flow_pid, flow_ref, collector_pid}
   end
 
-  def augament_flow(
+  def inject(
         %Flow{
           operations: operations,
           producers: producers
