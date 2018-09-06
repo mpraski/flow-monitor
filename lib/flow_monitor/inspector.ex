@@ -143,14 +143,14 @@ defmodule FlowMonitor.Inspector do
       |> Enum.join()
 
     if String.length(formatted_args) === 0 do
-      acc |> build_name(op)
+      acc
     else
       acc
       |> add(")")
       |> add(formatted_args)
       |> add("(")
-      |> build_name(op)
     end
+    |> build_name(op)
   end
 
   defp build_name_segment(sym, acc) do
