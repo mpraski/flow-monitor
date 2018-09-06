@@ -9,11 +9,15 @@ defmodule FlowMonitor.Inspector do
 
   defmodule NameAcc do
     defstruct depth: 0,
-              max_depth: 10,
+              max_depth: 5,
               lines: []
 
     def new do
       %NameAcc{}
+    end
+
+    def from(%NameAcc{depth: depth, max_depth: max_depth}) do
+      %NameAcc{depth: depth, max_depth: max_depth}
     end
   end
 
@@ -92,7 +96,7 @@ defmodule FlowMonitor.Inspector do
     |> add("&")
   end
 
-  defp build_name_segment({:/, _, [{func, _, Elixir}, arity]}, acc) do
+  defp build_name_segment({:/, _, [func, arity]}, acc) do
     acc
     |> add([arity, "/"])
     |> build_name(func)
@@ -128,11 +132,25 @@ defmodule FlowMonitor.Inspector do
   end
 
   defp build_name_segment({op, _, args}, acc) do
-    acc
-    |> add(")")
-    |> build_name(args)
-    |> add("(")
-    |> build_name(op)
+    formatted_args =
+      args
+      |> Stream.map(fn arg ->
+        NameAcc.from(acc)
+        |> build_name(arg)
+        |> to_text()
+      end)
+      |> Stream.intersperse(", ")
+      |> Enum.join()
+
+    if String.length(formatted_args) === 0 do
+      acc |> build_name(op)
+    else
+      acc
+      |> add(")")
+      |> add(formatted_args)
+      |> add("(")
+      |> build_name(op)
+    end
   end
 
   defp build_name_segment(sym, acc) do
