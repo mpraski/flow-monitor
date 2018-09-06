@@ -4,8 +4,8 @@ defmodule FlowMonitor.Inspector do
 
   alias FlowMonitor.Collector
 
-  @default_types [:map, :each]
-  @mapper_types [:map, :each, :filter]
+  @default_types [:map, :flat_map, :each, :filter]
+  @mapper_types [:map, :flat_map, :each, :filter]
   @binary_operators [
     :+,
     :-,
@@ -45,12 +45,13 @@ defmodule FlowMonitor.Inspector do
     :::,
     :when,
     :<-,
-    :\\
+    :\\,
+    :/
   ]
 
   defmodule NameAcc do
     defstruct depth: 0,
-              max_depth: 5,
+              max_depth: 10,
               lines: []
 
     def new do
@@ -137,9 +138,17 @@ defmodule FlowMonitor.Inspector do
     |> add("&")
   end
 
-  defp build_name_segment({:/, _, [func, arity]}, acc) do
+  defp build_name_segment({:/, _, [{{:., _, _}, _, _} = dot_access, arity]}, acc) do
     acc
-    |> add([arity, "/"])
+    |> add(arity)
+    |> add("/")
+    |> build_name(dot_access)
+  end
+
+  defp build_name_segment({:/, _, [{func, _, Elixir}, arity]}, acc) do
+    acc
+    |> add(arity)
+    |> add("/")
     |> build_name(func)
   end
 
@@ -192,7 +201,7 @@ defmodule FlowMonitor.Inspector do
         |> build_name(arg)
         |> to_text()
       end)
-      |> Stream.intersperse(" #{Atom.to_string(op)} ")
+      |> Stream.intersperse(" #{op} ")
       |> Enum.join()
 
     acc
