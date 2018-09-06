@@ -83,7 +83,7 @@ defmodule FlowMonitor.Collector do
   def init([], %Config{path: path, scopes: scopes, graph_name: name} = config) do
     dir = Path.join(path, "#{name}-#{safe_time()}")
 
-    :file.make_dir(dir)
+    :ok = :file.make_dir(dir)
 
     files =
       scopes

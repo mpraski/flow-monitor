@@ -6,6 +6,47 @@ defmodule FlowMonitor.Inspector do
 
   @default_types [:map, :each]
   @mapper_types [:map, :each, :filter]
+  @binary_operators [
+    :+,
+    :-,
+    :*,
+    :++,
+    :--,
+    :..,
+    :<>,
+    :in,
+    :"not in",
+    :|>,
+    :<<<,
+    :>>>,
+    :~>>,
+    :<<~,
+    :~>,
+    :<~,
+    :<~>,
+    :<|>,
+    :<,
+    :>,
+    :<=,
+    :>=,
+    :==,
+    :!=,
+    :=~,
+    :===,
+    :!==,
+    :&&,
+    :&&&,
+    :and,
+    :||,
+    :|||,
+    :or,
+    :=,
+    :|,
+    :::,
+    :when,
+    :<-,
+    :\\
+  ]
 
   defmodule NameAcc do
     defstruct depth: 0,
@@ -132,6 +173,35 @@ defmodule FlowMonitor.Inspector do
   end
 
   defp build_name_segment({op, _, args}, acc) do
+    if op in @binary_operators do
+      build_operator_call(op, args, acc)
+    else
+      build_function_call(op, args, acc)
+    end
+  end
+
+  defp build_name_segment(sym, acc) do
+    acc |> add(sym)
+  end
+
+  defp build_operator_call(op, [_, _] = args, acc) do
+    formatted_call =
+      args
+      |> Stream.map(fn arg ->
+        NameAcc.from(acc)
+        |> build_name(arg)
+        |> to_text()
+      end)
+      |> Stream.intersperse(" #{Atom.to_string(op)} ")
+      |> Enum.join()
+
+    acc
+    |> add(")")
+    |> add(formatted_call)
+    |> add("(")
+  end
+
+  defp build_function_call(op, args, acc) do
     formatted_args =
       args
       |> Stream.map(fn arg ->
@@ -151,10 +221,6 @@ defmodule FlowMonitor.Inspector do
       |> add("(")
     end
     |> build_name(op)
-  end
-
-  defp build_name_segment(sym, acc) do
-    acc |> add(sym)
   end
 
   defp add(acc, elem) when not is_list(elem) do
