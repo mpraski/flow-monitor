@@ -5,7 +5,9 @@ defmodule FlowMonitor do
 
   alias FlowMonitor.{Collector, Inspector}
 
-  defmacro run(pipeline, opts \\ []) do
+  @default_opts [collect_producers: true]
+
+  defmacro run(pipeline, opts \\ @default_opts) do
     names =
       pipeline
       |> Inspector.extract_names()
@@ -23,9 +25,12 @@ defmodule FlowMonitor do
   end
 
   def start_flow(%Flow{} = flow, names, opts) do
-    enumerable_names = flow |> Inspector.extract_producer_names()
-
-    scopes = enumerable_names ++ names
+    scopes =
+      if Keyword.get(opts, :collect_producers) do
+        Inspector.extract_producer_names(flow) ++ names
+      else
+        names
+      end
 
     {:ok, collector_pid} = Collector.start_link(opts |> Keyword.put(:scopes, scopes))
 
