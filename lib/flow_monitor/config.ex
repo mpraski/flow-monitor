@@ -1,4 +1,8 @@
 defmodule FlowMonitor.Config do
+  @moduledoc """
+  Struct representing configurable parameters of the generated graph.
+  """
+
   defstruct path: ".",
             scopes: [],
             font_name: "Arial",

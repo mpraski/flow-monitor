@@ -1,10 +1,11 @@
 defmodule FlowMonitor.Inspector do
-  # Collect stages' names via AST inspection, then simply start collector by
-  # replacing operations with their augamented version
-
   alias FlowMonitor.Collector
 
-  @default_types [:map, :flat_map, :each, :filter]
+  @moduledoc """
+  Utility module containing functions for building Flow mapper functions textual representations from the AST,
+  as well as injecting counter incrementing calls to mapper functions.
+  """
+
   @mapper_types [:map, :flat_map, :each, :filter]
   @binary_operators [
     :+,
@@ -50,21 +51,26 @@ defmodule FlowMonitor.Inspector do
   ]
 
   defmodule NameAcc do
+    @moduledoc """
+    Accumulates parts of the textual representation while travesing the AST.
+    Also defined maximum traversal depth.
+    """
+
     defstruct depth: 0,
               max_depth: 10,
               lines: []
 
-    def new do
-      %NameAcc{}
-    end
+    def new, do: %__MODULE__{}
 
-    def from(%NameAcc{depth: depth, max_depth: max_depth}) do
-      %NameAcc{depth: depth, max_depth: max_depth}
+    def from(%__MODULE__{depth: depth, max_depth: max_depth}) do
+      %__MODULE__{depth: depth, max_depth: max_depth}
     end
   end
 
   def extract_names(pipeline) do
-    pipeline |> extract_names([]) |> Enum.reverse()
+    pipeline
+    |> extract_names([])
+    |> Enum.reverse()
   end
 
   defp extract_names(
@@ -78,24 +84,21 @@ defmodule FlowMonitor.Inspector do
            [mapper]
          },
          acc
-       ) do
-    if type in @mapper_types do
-      formatted_type =
-        type
-        |> Atom.to_string()
-        |> String.capitalize()
+       )
+       when type in @mapper_types do
+    formatted_type =
+      type
+      |> Atom.to_string()
+      |> String.capitalize()
 
-      [
-        NameAcc.new()
-        |> add(")")
-        |> build_name(mapper)
-        |> add("#{formatted_type} (")
-        |> to_text()
-        | acc
-      ]
-    else
-      acc
-    end
+    [
+      NameAcc.new()
+      |> add(")")
+      |> build_name(mapper)
+      |> add("#{formatted_type} (")
+      |> to_text()
+      | acc
+    ]
   end
 
   defp extract_names({_op, _meta, args}, acc) do
@@ -106,9 +109,7 @@ defmodule FlowMonitor.Inspector do
     args |> Enum.reduce(acc, &extract_names/2)
   end
 
-  defp extract_names(_, acc) do
-    acc
-  end
+  defp extract_names(_, acc), do: acc
 
   defp build_name(
          %NameAcc{
@@ -181,19 +182,7 @@ defmodule FlowMonitor.Inspector do
     acc |> add(sym)
   end
 
-  defp build_name_segment({op, _, args}, acc) do
-    if op in @binary_operators do
-      build_operator_call(op, args, acc)
-    else
-      build_function_call(op, args, acc)
-    end
-  end
-
-  defp build_name_segment(sym, acc) do
-    acc |> add(sym)
-  end
-
-  defp build_operator_call(op, [_, _] = args, acc) do
+  defp build_name_segment({op, _, [_, _] = args}, acc) when op in @binary_operators do
     formatted_call =
       args
       |> Stream.map(fn arg ->
@@ -210,7 +199,7 @@ defmodule FlowMonitor.Inspector do
     |> add("(")
   end
 
-  defp build_function_call(op, args, acc) do
+  defp build_name_segment({op, _, args}, acc) do
     formatted_args =
       args
       |> Stream.map(fn arg ->
@@ -221,24 +210,28 @@ defmodule FlowMonitor.Inspector do
       |> Stream.intersperse(", ")
       |> Enum.join()
 
-    if String.length(formatted_args) === 0 do
-      acc
-    else
-      acc
-      |> add(")")
-      |> add(formatted_args)
-      |> add("(")
-    end
-    |> build_name(op)
+    acc =
+      if String.length(formatted_args) === 0 do
+        acc
+      else
+        acc
+        |> add(")")
+        |> add(formatted_args)
+        |> add("(")
+      end
+
+    acc |> build_name(op)
+  end
+
+  defp build_name_segment(sym, acc) do
+    acc |> add(sym)
   end
 
   defp add(acc, elem) when not is_list(elem) do
     acc |> add([elem])
   end
 
-  defp add(acc, []) do
-    acc
-  end
+  defp add(acc, []), do: acc
 
   defp add(%NameAcc{lines: lines} = acc, [elem | rest]) do
     %NameAcc{acc | lines: [elem | lines]} |> add(rest)
@@ -252,9 +245,7 @@ defmodule FlowMonitor.Inspector do
     [items]
   end
 
-  defp to_list(items) do
-    items
-  end
+  defp to_list(items), do: items
 
   def extract_producer_names(%Flow{producers: producers}) do
     case producers do
@@ -273,7 +264,7 @@ defmodule FlowMonitor.Inspector do
     :"Enumerable #{index}"
   end
 
-  def inject_monitors(pid, operations, names, types \\ @default_types) do
+  def inject_monitors(pid, operations, names, types \\ @mapper_types) do
     [
       operations,
       names

@@ -1,7 +1,11 @@
 defmodule FlowMonitor.Grapher do
   use GenServer
-
   alias FlowMonitor.Config
+
+  @moduledoc """
+  Supervised process, upon receiving graph configration struct and log files paths
+  it writes a plot.gp definition file and also calls gnuplot to generate the image.
+  """
 
   @plot_file "plot.gp"
 

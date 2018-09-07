@@ -1,12 +1,19 @@
 defmodule FlowMonitor.Collector do
   use GenServer
 
+  @moduledoc """
+  A collector process receiving all defined couter increments from
+  augmented flow mapper functions.
+  """
+
   alias FlowMonitor.{Grapher, Config}
 
   @timeres :millisecond
   @time_margin 2
 
   defmodule State do
+    @moduledoc false
+
     defstruct time: 0,
               files: %{},
               counts: %{},
