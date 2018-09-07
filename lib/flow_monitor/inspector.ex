@@ -1,10 +1,10 @@
 defmodule FlowMonitor.Inspector do
-  alias FlowMonitor.Collector
-
   @moduledoc """
   Utility module containing functions for building Flow mapper functions textual representations from the AST,
   as well as injecting counter incrementing calls to mapper functions.
   """
+
+  alias FlowMonitor.Collector
 
   @mapper_types [:map, :flat_map, :each, :filter]
   @binary_operators [

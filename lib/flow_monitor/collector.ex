@@ -1,12 +1,11 @@
 defmodule FlowMonitor.Collector do
-  use GenServer
-
   @moduledoc """
   A collector process receiving all defined couter increments from
   augmented flow mapper functions.
   """
 
-  alias FlowMonitor.{Grapher, Config}
+  use GenServer
+  alias FlowMonitor.{Config, Grapher}
 
   @timeres :millisecond
   @time_margin 2
@@ -174,7 +173,7 @@ defmodule FlowMonitor.Collector do
     |> String.replace("&", ~s(\\\\\&))
   end
 
-  defp safe_time() do
+  defp safe_time do
     DateTime.utc_now() |> DateTime.to_unix()
   end
 end
