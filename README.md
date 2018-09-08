@@ -1,4 +1,7 @@
 # Flow Monitor
+========
+
+[![Hex.pm](https://img.shields.io/hexpm/v/flow_monitor.svg)](https://hex.pm/packages/flow_monitor)
 
 ## What is it?
 
