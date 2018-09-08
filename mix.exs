@@ -48,8 +48,7 @@ defmodule FlowMonitor.MixProject do
 
   defp package do
     [
-      files: ~w(lib config .formatter.exs mix.exs README* LICENSE*
-                CHANGELOG*),
+      files: ~w(lib config .formatter.exs mix.exs README* LICENSE*),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/mpraski/flow-monitor"}
     ]
