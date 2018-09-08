@@ -1,13 +1,50 @@
 defmodule FlowMonitor do
   @moduledoc """
-  Measure progress of each step in a Flow pipeline
+  Measure progress of each step in a Flow pipeline.
   """
 
   alias FlowMonitor.{Collector, Inspector}
 
-  @default_opts [collect_producers: true]
+  @doc """
+  Runs the metrics collector on a given Flow pipeline.
+  Results are store in a directory `{graph_name}-{timestamp}` in a given path.
+  See `FlowMonitor.Config` for configurable options which can be passed as keyword list `opts`.
 
-  defmacro run(pipeline, opts \\ @default_opts) do
+  ## Examples:
+
+  #### Specify path for collected metrics, name and title
+      opts = [
+        path: "./metrics",
+        graph_name: "collected-metrics",
+        graph_title: "Metrics collected from a Flow execution"
+      ]
+
+      FlowMonitor.run(
+        1..100_000
+        |> Flow.from_enumerable()
+        |> Flow.map(&(&1 * &1)),
+
+        opts
+      )
+
+  #### Specify other graph parameters
+      opts = [
+        font_name: "Verdana",
+        font_size: 12,
+        graph_size: {800, 600},
+        graph_range: {1000, 15000}
+      ]
+
+      FlowMonitor.run(
+        1..100_000
+        |> Flow.from_enumerable()
+        |> Flow.map(&(&1 * &1)),
+
+        opts
+      )
+  """
+  @spec run(any(), keyword()) :: any()
+  defmacro run(pipeline, opts \\ []) do
     names =
       pipeline
       |> Inspector.extract_names()
@@ -24,13 +61,10 @@ defmodule FlowMonitor do
     end
   end
 
+  @doc false
+  @spec start_flow(Flow.t(), [String.t()], keyword()) :: {pid(), reference(), pid()}
   def start_flow(%Flow{} = flow, names, opts) do
-    scopes =
-      if Keyword.get(opts, :collect_producers) do
-        Inspector.extract_producer_names(flow) ++ names
-      else
-        names
-      end
+    scopes = Inspector.extract_producer_names(flow) ++ names
 
     {:ok, collector_pid} = Collector.start_link(opts |> Keyword.put(:scopes, scopes))
 
@@ -44,6 +78,8 @@ defmodule FlowMonitor do
     {flow_pid, flow_ref, collector_pid}
   end
 
+  @doc false
+  @spec inject(Flow.t(), pid(), [String.t()]) :: Flow.t()
   def inject(
         %Flow{
           operations: operations,

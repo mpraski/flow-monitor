@@ -1,8 +1,5 @@
 defmodule FlowMonitor.Grapher do
-  @moduledoc """
-  Supervised process, upon receiving graph configration struct and log files paths
-  it writes a plot.gp definition file and also calls gnuplot to generate the image.
-  """
+  @moduledoc false
 
   use GenServer
   alias FlowMonitor.Config

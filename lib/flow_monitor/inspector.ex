@@ -1,8 +1,5 @@
 defmodule FlowMonitor.Inspector do
-  @moduledoc """
-  Utility module containing functions for building Flow mapper functions textual representations from the AST,
-  as well as injecting counter incrementing calls to mapper functions.
-  """
+  @moduledoc false
 
   alias FlowMonitor.Collector
 
@@ -51,10 +48,7 @@ defmodule FlowMonitor.Inspector do
   ]
 
   defmodule NameAcc do
-    @moduledoc """
-    Accumulates parts of the textual representation while travesing the AST.
-    Also defined maximum traversal depth.
-    """
+    @moduledoc false
 
     defstruct depth: 0,
               max_depth: 10,

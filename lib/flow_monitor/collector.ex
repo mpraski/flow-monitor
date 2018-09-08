@@ -1,8 +1,5 @@
 defmodule FlowMonitor.Collector do
-  @moduledoc """
-  A collector process receiving all defined couter increments from
-  augmented flow mapper functions.
-  """
+  @moduledoc false
 
   use GenServer
   alias FlowMonitor.{Config, Grapher}
