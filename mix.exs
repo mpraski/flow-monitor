@@ -10,7 +10,9 @@ defmodule FlowMonitor.MixProject do
       deps: deps(),
       description: description(),
       docs: docs(),
-      package: package()
+      package: package(),
+      name: "Flow Monitor",
+      source_url: "https://github.com/mpraski/flow-monitor"
     ]
   end
 

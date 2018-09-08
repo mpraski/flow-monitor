@@ -1,12 +1,12 @@
 defmodule FlowMonitor do
   @moduledoc """
-  Measure progress of each step in a Flow pipeline.
+  Measure progress of each step in a `Flow` pipeline.
   """
 
   alias FlowMonitor.{Collector, Inspector}
 
   @doc """
-  Runs the metrics collector on a given Flow pipeline.
+  Runs the metrics collector on a given `Flow` pipeline.
   Results are store in a directory `{graph_name}-{timestamp}` in a given path.
   See `FlowMonitor.Config` for configurable options which can be passed as keyword list `opts`.
 
