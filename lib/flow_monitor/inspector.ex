@@ -176,6 +176,10 @@ defmodule FlowMonitor.Inspector do
     acc |> add(sym)
   end
 
+  defp build_name_segment({term, _, namespace}, acc) when is_atom(namespace) do
+    acc |> add(term)
+  end
+
   defp build_name_segment({op, _, [_, _] = args}, acc) when op in @binary_operators do
     formatted_call =
       args

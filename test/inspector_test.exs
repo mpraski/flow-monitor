@@ -1,4 +1,4 @@
-defmodule FlowMonitorTest do
+defmodule InspectorTest do
   use ExUnit.Case
 
   alias FlowMonitor.Inspector
@@ -35,6 +35,20 @@ defmodule FlowMonitorTest do
   test "correctly represents &func(&1) expressions" do
     code = quote do: Flow.map(&func(&1))
     representation = "Map (&func(&1))"
+
+    assert Inspector.extract_names(code) == [representation]
+  end
+
+  test "correctly represents &func(&1, term, term2) expressions" do
+    code = quote do: Flow.map(&func(&1, term, term2))
+    representation = "Map (&func(&1, term, term2))"
+
+    assert Inspector.extract_names(code) == [representation]
+  end
+
+  test "correctly represents some.nested.reference expressions" do
+    code = quote do: Flow.map(some.nested.reference)
+    representation = "Map (some.nested.reference)"
 
     assert Inspector.extract_names(code) == [representation]
   end
