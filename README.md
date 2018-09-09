@@ -1,6 +1,7 @@
 # Flow Monitor
 
 [![Hex.pm](https://img.shields.io/hexpm/v/flow_monitor.svg)](https://hex.pm/packages/flow_monitor)
+[![Build Status](https://travis-ci.org/mpraski/flow-monitor.svg?branch=master)](https://travis-ci.org/mpraski/flow-monitor)
 
 Elixir macro for measuring progress of steps in a [Flow](https://hexdocs.pm/flow/Flow.html) pipeline.
 
