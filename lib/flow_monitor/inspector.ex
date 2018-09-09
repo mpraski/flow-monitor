@@ -61,6 +61,7 @@ defmodule FlowMonitor.Inspector do
     end
   end
 
+  @spec extract_names(any()) :: [String.t()]
   def extract_names(pipeline) do
     pipeline
     |> extract_names([])
@@ -245,6 +246,7 @@ defmodule FlowMonitor.Inspector do
 
   defp to_list(items), do: items
 
+  @spec extract_producer_names(Flow.t()) :: [String.t()]
   def extract_producer_names(%Flow{producers: producers}) do
     case producers do
       {:enumerables, enumerables} ->
@@ -262,6 +264,7 @@ defmodule FlowMonitor.Inspector do
     :"Enumerable #{index}"
   end
 
+  @spec inject_monitors(pid(), any(), [String.t()], [atom()]) :: [any()]
   def inject_monitors(pid, operations, names, types \\ @mapper_types) do
     [
       operations,
@@ -285,6 +288,7 @@ defmodule FlowMonitor.Inspector do
     |> Enum.to_list()
   end
 
+  @spec inject_enumerable_monitors(pid(), any()) :: [String.t()]
   def inject_enumerable_monitors(pid, enumerables) do
     enumerables
     |> Stream.with_index(1)
