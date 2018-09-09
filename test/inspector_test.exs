@@ -18,6 +18,12 @@ defmodule InspectorTest do
     end)
   end
 
+  test "returns empty list for irrelevant flow definition" do
+    code = quote do: Flow.partition(max_demand: 5, stages: 5)
+
+    assert Inspector.extract_names(code) == []
+  end
+
   test "correctly represents fn [args] -> ... end expressions" do
     code = quote do: Flow.map(fn item -> item * 2 end)
     representation = "Map (fn item -> ... end)"
@@ -58,6 +64,12 @@ defmodule InspectorTest do
     representation = "Map (&IO.inspect/1)"
 
     assert Inspector.extract_names(code) == [representation]
+  end
+
+  test "returns an empty producer list for irrelevant flow definition" do
+    flow = %Flow{} |> Flow.partition(max_demand: 5, stages: 5)
+
+    assert Inspector.extract_producer_names(flow) == []
   end
 
   test "correctly extract single producer from pipeline" do
