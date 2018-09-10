@@ -5,7 +5,7 @@ defmodule FlowMonitor.MixProject do
     [
       app: :flow_monitor,
       version: "0.1.2",
-      elixir: ">= 1.7.0",
+      elixir: ">= 1.6.0",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
